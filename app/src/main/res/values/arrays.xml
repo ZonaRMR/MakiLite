@@ -33,7 +33,6 @@
         <item>large_font</item>
         <item>xl_font</item>
         <item>xxl_font</item>
-        
     </string-array>
 
     <string-array name="messages_pref">
@@ -45,17 +44,15 @@
         <item>messenger_app</item>
         <item>messenger_lite</item>
         <item>disa_app</item>
-
     </string-array>
     
-    
-      <string-array name="pref_theme_values_free">
+     <string-array name="pref_theme_values_free">
         <item>facebooktheme</item>
+        <item>fbdarktheme</item>
         <item>darktheme</item>
         <item>draculatheme</item>
         <item>materialtheme</item>
         <item>makiclassic</item>
-
       </string-array>
       
       <string-array name="pref_feed">
@@ -71,7 +68,6 @@
         <item>bottom_three</item>
         <item>bottom_four</item>
     </string-array>
-    
     
     <integer name="fade_duration">250</integer>
 
