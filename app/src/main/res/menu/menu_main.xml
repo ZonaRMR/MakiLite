@@ -28,7 +28,7 @@
         app:actionLayout="@layout/menu_badge"
         android:orderInCategory="1"
         app:showAsAction="always"
-		android:icon="@drawable/message_outline"
+	android:icon="@drawable/forum"
         tools:ignore="AlwaysShowAction"/>
         
     <item 
