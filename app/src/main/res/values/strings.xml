@@ -125,8 +125,9 @@
 
     <string-array name="pref_theme_fb_entries">
         <item>Facebook Theme</item>
-        <item>Black Theme</item>
-        <item>Dracula Theme</item>
+	<item>Facebook Dark Theme</item>
+        <item>AMOLED Theme</item>
+        <item>Material Dark</item>
         <item>Maki Theme</item>
         <item>Maki Classic</item>
     </string-array>
