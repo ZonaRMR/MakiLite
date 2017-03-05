@@ -2,6 +2,8 @@
 Hello!
 This is a source code of Maki Lite. 
 
+![MakiImage](https://habrastorage.org/files/2d4/edc/61d/2d4edc61d0594e90bb76b4dc4ab0d398.png)
+
 Enjoy.
 
 Google Play: https://play.google.com/store/apps/details?id=com.sunshine.makilite
