@@ -49,17 +49,20 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -80,8 +83,8 @@ import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationAdapter;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.aurelhubert.ahbottomnavigation.notification.AHNotification;
-import com.github.clans.fab.*;
-import com.github.clans.fab.FloatingActionButton;
+import com.gordonwong.materialsheetfab.MaterialSheetFab;
+import com.gordonwong.materialsheetfab.MaterialSheetFabEventListener;
 import com.sunshine.makilite.pin.PinCompatActivity;
 import com.sunshine.makilite.pin.managers.AppLock;
 import com.kennyc.bottomsheet.BottomSheet;
@@ -98,6 +101,7 @@ import com.sunshine.makilite.ui.MakiInterfaces;
 import com.sunshine.makilite.utils.Bookmarks;
 import com.sunshine.makilite.utils.BookmarksAdapter;
 import com.sunshine.makilite.utils.DownloadManagerResolver;
+import com.sunshine.makilite.utils.Fab;
 import com.sunshine.makilite.utils.Miscellany;
 import com.sunshine.makilite.utils.PreferencesUtility;
 import com.greysonparrelli.permiso.Permiso;
@@ -110,21 +114,26 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import net.grandcentrix.tray.TrayAppPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import im.delight.android.webview.AdvancedWebView;
 
 
 @SuppressLint({ "SetJavaScriptEnabled", "NewApi" })
 @SuppressWarnings("ALL")
-public class MainActivity extends PinCompatActivity implements View.OnLongClickListener, BottomSheetListener, NegativeReviewListener, ReviewListener, BookmarksAdapter.onBookmarkSelected {
+public class MainActivity extends PinCompatActivity implements View.OnClickListener, View.OnLongClickListener, BottomSheetListener, NegativeReviewListener, ReviewListener, BookmarksAdapter.onBookmarkSelected {
+    private final MyHandler linkHandler = new MyHandler(this);
     public static final String PREFS_JELLY_BEAN_WARNING = "BetaNotification";
     private static Activity mainActivity;
     //bookmarks
@@ -133,7 +142,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
     public static DrawerLayout bookmarksDrawer;
     RecyclerView recyclerBookmarks;
     private ArrayList<Bookmarks> listBookmarks = new ArrayList<>();
-    private BookmarksAdapter adapterBookmarks;
+    public static BookmarksAdapter adapterBookmarks;
     private boolean refreshed;
     //Files
     private static final int FILECHOOSER_RESULTCODE = 1;
@@ -146,34 +155,16 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
     private Handler handler = new Handler();
     private AHBottomNavigation bottomNavigation;
     //Bottom Navigation Ends
-    public static  FloatingActionMenu FAB;
-    private FloatingActionButton DownloadFab;
-    private final View.OnClickListener mFABClickListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-            switch (v.getId()) {
-                case R.id.textFAB:
-                    webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_overview%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_ENCODED + "%3Fpageload%3Dcomposer%22%7D%7D)()");
-                    break;
-                case R.id.photoFAB:
-                    webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_photo%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_ENCODED + "%3Fpageload%3Dcomposer_photo%22%7D%7D)()");
-                    break;
-                case R.id.checkinFAB:
-                    webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_location%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_ENCODED + "%3Fpageload%3Dcomposer_checkin%22%7D%7D)()");
-                    break;
-
-                default:
-                    break;
-            }
-            FAB.close(true);
-        }
-    };
+    public static Fab FAB;
+    private MaterialSheetFab materialSheetFab;
     private final static String LOG_TAG = "Maki";
     static final List<String> FB_PERMISSIONS = Arrays.asList("public_profile", "user_friends");
     public static final String FACEBOOK = "https://m.facebook.com/";
     public static final String BASICFB = "https://mbasic.facebook.com/";
-    private static final String FACEBOOK_ENCODED = "https%3A%2F%2Fm.facebook.com%2F";
+    public static final String MESSENGER_URL = "https://www.messenger.com/login";
+    private static final String FACEBOOK_URL_BASE_ENCODED = "https%3A%2F%2Fm.facebook.com%2F";
+    private static final String MESSENGER  ="Mozilla/5.0 (Linux; Linux x86_64; LG-H815 Build/MRA58K; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/49.0.2623.105 Safari/537.36\"";
+    private static String userAgentDefault;
     private final BadgeStyle BADGE_GRAY_FULL = new BadgeStyle(BadgeStyle.Style.LARGE, R.layout.menu_badge_full, Color.parseColor("#595c68"), Color.parseColor("#595c68"), Color.WHITE);
     int request_Code = 1;
     private static Context context = MakiApplication.getContextOfApplication();
@@ -267,18 +258,17 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
         final boolean fbtheme = PreferencesUtility.getInstance(this).getFreeTheme().equals("facebooktheme");
         final boolean blacktheme = PreferencesUtility.getInstance(this).getFreeTheme().equals("darktheme");
         final boolean dracula = PreferencesUtility.getInstance(this).getFreeTheme().equals("draculatheme");
+        final boolean fbdark = PreferencesUtility.getInstance(this).getFreeTheme().equals("fbdarktheme");
         final boolean maki = PreferencesUtility.getInstance(this).getFreeTheme().equals("materialtheme");
         final boolean makiclassic = PreferencesUtility.getInstance(this).getFreeTheme().equals("makiclassic");
 
         boolean mCreatingActivity = true;
         if (!mCreatingActivity) {
             if (isMakiTheme)
-                setTheme(R.style.MakiTheme);
+                setTheme(R.style.MakiBlue);
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_main);
-
         } else {
-
             if (isDarkTheme)
                 setTheme(R.style.MakiDark);
 
@@ -402,10 +392,10 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 MakiReceiver.scheduleAlarms(getApplicationContext(), false);
             }
             if (preferences.getBoolean("show_fab", false)) {
-                FAB = (FloatingActionMenu) findViewById(R.id.fab);
+                FAB = (Fab) findViewById(R.id.fab);
                 FAB.setVisibility(View.VISIBLE);
             } else {
-                FAB = (FloatingActionMenu) findViewById(R.id.fab);
+                FAB = (Fab) findViewById(R.id.fab);
                 FAB.setVisibility(View.GONE);
             }
             if (classic) {
@@ -413,25 +403,28 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 allTabs.setVisibility(View.GONE);
                 bottomNavigation = (AHBottomNavigation) findViewById(R.id.bottom_navigation);
                 bottomNavigation.setVisibility(View.GONE);
+                bottomNavigation.setEnabled(false);
             }
             if (topfour) {
                 allTabs = (TabLayout) findViewById(R.id.tabs);
                 allTabs.setVisibility(View.VISIBLE);
                 bottomNavigation = (AHBottomNavigation) findViewById(R.id.bottom_navigation);
                 bottomNavigation.setVisibility(View.GONE);
+                bottomNavigation.setEnabled(false);
             }
             if (bottomthree) {
                 allTabs = (TabLayout) findViewById(R.id.tabs);
                 allTabs.setVisibility(View.GONE);
-                FAB = (FloatingActionMenu) findViewById(R.id.fab);
                 bottomNavigation = (AHBottomNavigation) findViewById(R.id.bottom_navigation);
                 bottomNavigation.setVisibility(View.VISIBLE);
+                bottomNavigation.setEnabled(true);
             }
             if (bottomfour) {
                 allTabs = (TabLayout) findViewById(R.id.tabs);
                 allTabs.setVisibility(View.GONE);
                 bottomNavigation = (AHBottomNavigation) findViewById(R.id.bottom_navigation);
                 bottomNavigation.setVisibility(View.VISIBLE);
+                bottomNavigation.setEnabled(true);
             }
 
             BAR = (Toolbar) findViewById(R.id.toolbar_main);
@@ -445,7 +438,30 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
             drawerLayoutFavs = (DrawerLayout) findViewById(R.id.drawer_layout);
             customViewContainer = (FrameLayout) findViewById(R.id.fullscreen_custom_content);
-            FAB = (FloatingActionMenu) findViewById(R.id.fab);
+            FAB = (Fab) findViewById(R.id.fab);
+            View sheetView = findViewById(R.id.fab_sheet);
+            View overlay = findViewById(R.id.overlay);
+            int sheetColor = getResources().getColor(R.color.white);
+            int fabColor = getResources().getColor(R.color.md_black_1000_10);
+            // Initialize material sheet FAB
+            materialSheetFab = new MaterialSheetFab<>(FAB, sheetView, overlay,
+                    sheetColor, fabColor);
+
+            materialSheetFab.setEventListener(new MaterialSheetFabEventListener() {
+                @Override
+                public void onShowSheet() {
+
+                }
+
+                @Override
+                public void onHideSheet() {
+                }
+            });
+
+            // Set material sheet item click listeners
+            findViewById(R.id.textFAB).setOnClickListener(this);
+            findViewById(R.id.photoFAB).setOnClickListener(this);
+            findViewById(R.id.checkinFAB).setOnClickListener(this);
 
             String webViewUrl = "https://m.facebook.com";
 
@@ -458,7 +474,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             if (topnews) {
                 webViewUrl = "https://m.facebook.com/home.php?sk=h_nor&refid=8";
             }
-            if(basicmode) {
+            if (basicmode) {
                 webViewUrl = "https://mbasic.facebook.com";
             }
 
@@ -471,10 +487,6 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
                 }
             });
-            // Inflate the FAB menu
-            findViewById(R.id.textFAB).setOnClickListener(mFABClickListener);
-            findViewById(R.id.photoFAB).setOnClickListener(mFABClickListener);
-            findViewById(R.id.checkinFAB).setOnClickListener(mFABClickListener);
 
             webView = (AdvancedWebView) findViewById(R.id.webView1);
             webView.getSettings().setJavaScriptEnabled(true);
@@ -488,6 +500,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             webView.getSettings().setAllowFileAccess(true);
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setLoadWithOverviewMode(true);
+            webView.getSettings().setUserAgentString(MESSENGER);
             webView.getSettings().setUseWideViewPort(true);
             webView.getSettings().setRenderPriority(WebSettings.RenderPriority.HIGH);
             webView.getSettings().setSupportZoom(true);
@@ -501,8 +514,8 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             webView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
             webView.setListener(this, new MakiListener(this, webView));
             webView.addJavascriptInterface(new MakiInterfaces(this), "android");
-
-            //webView.getSettings().setUserAgentString(USER_AGENT_BASIC);
+            webView.loadUrl(webViewUrl);
+            // Inflate the FAB menu
             //Bookmarks
             ImageView add_button = (ImageView) findViewById(R.id.add_bookmark);
             add_button.setClickable(true);
@@ -552,7 +565,6 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                             sharedUrl = sharedUrl.substring(startUrlIndex);
                         }
                     }
-                    // final step, set the proper Sharer...
                     webViewUrl = String.format("https://m.facebook.com/sharer.php?u=%s&t=%s", sharedUrl, sharedSubject);
                     webViewUrl = Uri.parse(webViewUrl).toString();
                 }
@@ -571,7 +583,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             } catch (Exception ignored) {
             }
 
-            webView.loadUrl(webViewUrl);
+
             webView.setWebViewClient(new WebViewClient() {
 
                 @Override
@@ -611,7 +623,8 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                         return false;
 
 
-                    }if (preferences.getBoolean("allow_inside", false)) {
+                    }
+                    if (preferences.getBoolean("allow_inside", false)) {
                         if (preferences.getBoolean("play_gifs", false)) {
                             if (url.contains("gif")) {
                                 if (url.contains("l.php?u=")) {
@@ -694,6 +707,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                     super.onPageStarted(view, url, favicon);
                     swipeRefreshLayout.setRefreshing(true);
                 }
+
                 @SuppressWarnings("deprecation")
                 @Override
                 public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -791,6 +805,20 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                                 injectDraculaCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("draculatheme", "draculatheme"));
                             }
                         }
+                        if (fbdark) {
+                            if (basicmode) {
+                                injectDarkBasicCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("fbdarktheme", "fbdarktheme"));
+                            }
+                            if (defaultfeed) {
+                                injectFbDarkCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("fbdarktheme", "fbdarktheme"));
+                            }
+                            if (mostrecent) {
+                                injectFbDarkCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("fbdarktheme", "fbdarktheme"));
+                            }
+                            if (topnews) {
+                                injectFbDarkCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("fbdarktheme", "fbdarktheme"));
+                            }
+                        }
                         if (isPinkTheme)
                             injectPinkCSS(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("pinktheme", "pinktheme"));
 
@@ -849,7 +877,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 }
 
                 @Override
-                public void onShowCustomView(View view,CustomViewCallback callback) {
+                public void onShowCustomView(View view, CustomViewCallback callback) {
                     try {
                         if (mCustomView != null) {
                             callback.onCustomViewHidden();
@@ -866,11 +894,10 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 }
 
 
-
                 @Override
                 public void onHideCustomView() {
                     super.onHideCustomView();
-                    try{
+                    try {
                         if (mCustomView == null)
                             return;
                         mCustomView.setVisibility(View.GONE);
@@ -879,7 +906,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                         customViewContainer.removeView(mCustomView);
                         mCustomViewCallback.onCustomViewHidden();
                         mCustomView = null;
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
 
@@ -899,13 +926,14 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 public void
                 onReceivedTitle(WebView view, String title) {
                     super.onReceivedTitle(view, title);
-                    try { if (title != null && title.contains("Facebook") || title.contains("1")) {
-                        MainActivity.this.setTitle(R.string.app_name);
-                    } else {
-                        MainActivity.this.setTitle(title);
+                    try {
+                        if (title != null && title.contains("Facebook") || title.contains("1")) {
+                            MainActivity.this.setTitle(R.string.app_name);
+                        } else {
+                            MainActivity.this.setTitle(title);
 
 
-                    }
+                        }
                         if (title != null && title.contains("https://www.facebook.com/dialog/return")) {
                             webView.loadUrl(FACEBOOK);
                         }
@@ -919,7 +947,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             });
 //What's new
             final SharedPreferences makimain = getSharedPreferences(PREFS_JELLY_BEAN_WARNING, 0);
-            boolean whats_new = makimain.getBoolean("whats_new_8", false);
+            boolean whats_new = makimain.getBoolean("whats_new_10", false);
             try {
                 if (!whats_new) {
                     new Handler().postDelayed(new Runnable() {
@@ -931,14 +959,14 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                                 @Override
                                 public void onDismissed(Snackbar snackbar, int event) {
                                     SharedPreferences.Editor editor = makimain.edit();
-                                    editor.putBoolean("whats_new_8", true);
+                                    editor.putBoolean("whats_new_10", true);
                                     editor.apply();
                                 }
 
                                 @Override
                                 public void onShown(Snackbar snackbar) {
                                     SharedPreferences.Editor editor = makimain.edit();
-                                    editor.putBoolean("whats_new_8", true);
+                                    editor.putBoolean("whats_new_10", true);
                                     editor.apply();
 
                                 }
@@ -956,11 +984,10 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             } catch (Exception ignored) {
 
             }
+
+
         }
-
-
     }
-
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         final boolean classic = PreferencesUtility.getInstance(this).getNavigation().equals("classic");
@@ -1497,6 +1524,18 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
         }
     }
 
+    private void injectFbDarkCSS(String mode) {
+        try {
+            InputStream inputStream = getAssets().open("fbdark.css");
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
+            inputStream.close();
+            webView.loadUrl("javascript:(function() {var parent = document.getElementsByTagName('head').item(0);var style = document.createElement('style');style.type = 'text/css';style.innerHTML = window.atob('" + Base64.encodeToString(buffer, 2) + "');" + "parent.appendChild(style)" + "})()");
+        } catch (Exception d) {
+            d.printStackTrace();
+        }
+    }
+
     private void injectDraculaBasicCSS(String mode) {
         try {
             InputStream inputStream = getAssets().open("draculabasic.css");
@@ -1584,6 +1623,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             d.printStackTrace();
         }
     }
+
 
     private void injectComposer(String mode) {
         try {
@@ -1879,7 +1919,8 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
             case 3:
                 if (defaultfeed) {
-                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                    MainActivity.this.setTitle(R.string.settings_more);
+                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                     break;
                 }
                 if (basicmode) {
@@ -1887,11 +1928,13 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                     break;
                 }
                 if(topnews) {
-                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                    MainActivity.this.setTitle(R.string.settings_more);
+                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                     break;
                 }
                 if(mostrecent){
-                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                    MainActivity.this.setTitle(R.string.settings_more);
+                    webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                     break;
                 }
 
@@ -1933,8 +1976,9 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
             case R.id.favorites:
                 bookmarksDrawer.openDrawer(GravityCompat.END);
                 break;
-            case R.id.reload:
-                webView.reload();
+         
+            case R.id.shortcut:
+                addLauncherShortcut();
                 break;
 
             case R.id.share:
@@ -1965,6 +2009,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                 proalert.show();
 
                 break;
+
             case R.id.forward:
                 webView.goForward();
 
@@ -2198,6 +2243,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
         bottomNavigation.setAccentColor(Color.parseColor("#616161"));
         bottomNavigation.setInactiveColor(Color.parseColor("#adadad"));
 
+
         if (bottomfour) {
             bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
                 @Override
@@ -2326,7 +2372,8 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
                         case 3:
                             if (defaultfeed) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
                             if (basicmode) {
@@ -2334,11 +2381,13 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                                 break;
                             }
                             if (topnews) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
                             if (mostrecent) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
 
@@ -2460,7 +2509,8 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
                         case 2:
                             if (defaultfeed) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
                             if (basicmode) {
@@ -2468,11 +2518,13 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
                                 break;
                             }
                             if (topnews) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
                             if (mostrecent) {
-                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='" + FACEBOOK + "home.php';}");
+                                MainActivity.this.setTitle(R.string.settings_more);
+                                webView.loadUrl("javascript:try{document.querySelector('#bookmarks_jewel > a').click();}catch(e){window.location.href='https://mobile.facebook.com/bookmarks';}");
                                 break;
                             }
 
@@ -2511,7 +2563,7 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
         }
         if (bottomfour) {
             bottomNavigation.setColored(false);
-            bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
+            bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_HIDE);
         }
 
 
@@ -2591,5 +2643,86 @@ public class MainActivity extends PinCompatActivity implements View.OnLongClickL
 
 
         }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void injectSelect() {
+        try {
+            InputStream inputStream = getAssets().open("selecttext.css");
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
+            inputStream.close();
+            String encoded = Base64.encodeToString(buffer, Base64.NO_WRAP);
+            webView.loadUrl("javascript:(function() {" +
+                    "var parent = document.getElementsByTagName('head').item(0);" +
+                    "var style = document.createElement('style');" +
+                    "style.type = 'text/css';" +
+                    "style.innerHTML = window.atob('" + encoded + "');" +
+                    "parent.appendChild(style)" +
+                    "})()");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private void addLauncherShortcut() {
+        final Intent shortcut = new Intent(this, CustomShortcutActivity.class);
+        shortcut.putExtra(CustomShortcutActivity.URL_FIELD, webView.getUrl());
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.label));
+        final AppCompatEditText input = new AppCompatEditText(this);
+        input.setHint(webView.getTitle());
+        input.setSingleLine();
+
+        FrameLayout container = new FrameLayout(this);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.leftMargin = 50;
+        params.rightMargin = 50;
+        input.setLayoutParams(params);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int whichButton) {
+                String label = input.getText().toString();
+                if (TextUtils.isEmpty(label))
+                    label = webView.getTitle();
+                shortcut.putExtra(CustomShortcutActivity.NAME_FIELD, label);
+                startActivity(shortcut);
+                Toast.makeText(getApplicationContext(), "\uD83D\uDC4C", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton(getString(android.R.string.cancel), null);
+
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+        alertDialog.getButton(DialogInterface.BUTTON_POSITIVE)
+                .setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+        alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)
+                .setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+    }
+
+    private void setUserAgent() {
+        webView.getSettings().setUserAgentString(userAgentDefault);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.textFAB:
+                webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_overview%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_URL_BASE_ENCODED + "%3Fpageload%3Dcomposer%22%7D%7D)()");
+                break;
+            case R.id.photoFAB:
+                webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_photo%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_URL_BASE_ENCODED + "%3Fpageload%3Dcomposer_photo%22%7D%7D)()");
+                break;
+            case R.id.checkinFAB:
+                webView.loadUrl("javascript:(function()%7Btry%7Bdocument.querySelector('button%5Bname%3D%22view_location%22%5D').click()%7Dcatch(_)%7Bwindow.location.href%3D%22" + FACEBOOK_URL_BASE_ENCODED + "%3Fpageload%3Dcomposer_checkin%22%7D%7D)()");
+                break;
+            default:
+                break;
+        }
+        materialSheetFab.hideSheet();
     }
 }
