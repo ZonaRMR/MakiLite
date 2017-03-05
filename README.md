@@ -6,6 +6,7 @@ Enjoy.
 
 Google Play: https://play.google.com/store/apps/details?id=com.sunshine.makilite
 
+
 Code from: 
 
 - Folio: https://github.com/MaTriXy/FolioforFacebook
@@ -17,6 +18,18 @@ Code from:
 - MaterialFBook: https://github.com/ZeeRooo/MaterialFBook
 
 Thank you very much, developers!
+
+**Maki 1.2.7 update:**
+
+- New icon;
+- Create shortcut to favorite pages on the homescreen;
+- New theme: Facebook Dark;
+- Updated Material Dark (Dracula) and AMOLED (Black) themes;
+- Bug fixes and minor improvements.
+
+**Maki 1.2.6 update:**
+
+- bug fixes and minor improvements.
 
 **Maki 1.2.5 update:**
 
