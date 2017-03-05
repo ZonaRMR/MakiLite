@@ -13,16 +13,17 @@
         android:icon="@drawable/arrow_right"
         android:orderInCategory="2"/>
 
-    <item
-        android:id="@+id/reload"
-        android:title="@string/menu_refresh"
-        android:icon="@drawable/menu_refresh"
-        android:orderInCategory="3"/>
 
     <item
         android:id="@+id/share"
         android:title="@string/update_share"
         android:icon="@drawable/share_page"
+        android:orderInCategory="3"/>
+
+    <item
+        android:id="@+id/shortcut"
+        android:title="@string/add_to_home_screen"
+        android:icon="@drawable/home"
         android:orderInCategory="4"/>
 
     <item
