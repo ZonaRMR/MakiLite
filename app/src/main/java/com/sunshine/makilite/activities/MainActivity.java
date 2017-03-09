@@ -500,7 +500,7 @@ public class MainActivity extends PinCompatActivity implements View.OnClickListe
             webView.getSettings().setAllowFileAccess(true);
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setLoadWithOverviewMode(true);
-            webView.getSettings().setUserAgentString(MESSENGER);
+         
             webView.getSettings().setUseWideViewPort(true);
             webView.getSettings().setRenderPriority(WebSettings.RenderPriority.HIGH);
             webView.getSettings().setSupportZoom(true);
@@ -2702,10 +2702,6 @@ public class MainActivity extends PinCompatActivity implements View.OnClickListe
                 .setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
         alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)
                 .setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
-    }
-
-    private void setUserAgent() {
-        webView.getSettings().setUserAgentString(userAgentDefault);
     }
 
     @Override
