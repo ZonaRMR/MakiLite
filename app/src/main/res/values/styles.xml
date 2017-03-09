@@ -106,6 +106,17 @@
         <item name="colorControlHighlight">@color/colorTransparent</item>
         <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
     </style>
+    
+       <style name="MakiBlue" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorPrimary</item>
+        <item name="colorButtonNormal">@color/colorPrimary</item>
+        <item name="colorControlHighlight">@color/colorTransparent</item>
+        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
+    </style>
 
     <style name="MakiTwitter" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
@@ -117,17 +128,6 @@
         <item name="colorControlHighlight">@color/colorTransparent</item>
         <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
     </style>
-
-    <style name="MakiTwitterDark" parent="Theme.AppCompat.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowActionModeOverlay">true</item>
-        <item name="colorPrimary">#55aeed</item>
-        <item name="colorPrimaryDark">#1d6599</item>
-        <item name="colorAccent">#55aeed</item>
-        <item name="colorButtonNormal">#55aeed</item>
-        <item name="colorControlHighlight">@color/colorTransparent</item>
-    </style>
-
 
     <style name="AppCompatAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
         <item name="colorAccent">@color/colorPrimaryDark</item>
